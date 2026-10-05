@@ -6,15 +6,26 @@
   <title>Products</title>
   <style>
     body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 16px; }
-    table { width: 100%; border-collapse: collapse; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
     th { background: #f2f2f2; }
+    form { display: flex; gap: 8px; flex-wrap: wrap; }
+    input { padding: 8px; flex: 1; min-width: 120px; }
+    button { padding: 8px 16px; cursor: pointer; }
+    #msg { margin-top: 8px; color: #b00020; }
   </style>
 </head>
 <body>
   <h1>Products (from Database)</h1>
-  <p id="status">Loading...</p>
-  <table id="table" style="display:none">
+
+  <form id="addForm">
+    <input id="name" placeholder="Product name" required />
+    <input id="price" type="number" step="any" placeholder="Price" required />
+    <button type="submit">Add Product</button>
+  </form>
+  <p id="msg"></p>
+
+  <table>
     <thead>
       <tr><th>ID</th><th>Name</th><th>Price</th></tr>
     </thead>
@@ -22,25 +33,53 @@
   </table>
 
   <script>
-    fetch("/.netlify/functions/getData")
+    var url = "/.netlify/functions/getData";
+
+    function render(data) {
+      var rows = document.getElementById("rows");
+      rows.innerHTML = "";
+      data.forEach(function (p) {
+        var tr = document.createElement("tr");
+        [p.id, p.name, p.price].forEach(function (v) {
+          var td = document.createElement("td");
+          td.textContent = v;
+          tr.appendChild(td);
+        });
+        rows.appendChild(tr);
+      });
+    }
+
+    function showError(text) {
+      document.getElementById("msg").textContent = text;
+    }
+
+    fetch(url)
       .then(function (res) { return res.json(); })
       .then(function (data) {
-        if (data.error) {
-          document.getElementById("status").textContent = "Error: " + data.error;
-          return;
-        }
-        var rows = document.getElementById("rows");
-        data.forEach(function (p) {
-          var tr = document.createElement("tr");
-          tr.innerHTML = "<td>" + p.id + "</td><td>" + p.name + "</td><td>" + p.price + "</td>";
-          rows.appendChild(tr);
-        });
-        document.getElementById("status").style.display = "none";
-        document.getElementById("table").style.display = "table";
+        if (data.error) { showError("Error: " + data.error); return; }
+        render(data);
       })
-      .catch(function (err) {
-        document.getElementById("status").textContent = "Failed to load: " + err.message;
-      });
+      .catch(function (err) { showError("Failed to load: " + err.message); });
+
+    document.getElementById("addForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      showError("");
+      var name = document.getElementById("name").value;
+      var price = document.getElementById("price").value;
+
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name, price: price })
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data.error) { showError("Error: " + data.error); return; }
+          render(data);
+          document.getElementById("addForm").reset();
+        })
+        .catch(function (err) { showError("Failed: " + err.message); });
+    });
   </script>
 </body>
 </html>
