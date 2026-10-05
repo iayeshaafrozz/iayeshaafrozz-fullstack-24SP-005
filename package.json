@@ -1,8 +1,8 @@
 {
   "name": "fullstack-24sp-005",
   "version": "1.0.0",
-  "description": "Frontend + Netlify Function + Supabase Postgres",
+  "description": "Frontend + Netlify Function + Netlify Database",
   "dependencies": {
-    "pg": "^8.11.0"
+    "@netlify/database": "latest"
   }
 }
